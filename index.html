@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CloveQ Quick QR Lotto</title>
+  <meta name="theme-color" content="#0b0a1e" />
+  <meta name="description" content="로또 추첨과 QR 스캔을 함께 쓰는 CloveQ Quick QR Lotto" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <style>
+    :root{
+      --bg1:#090616; --bg2:#140b35; --line:rgba(255,255,255,.08); --text:#f6f4ff; --muted:#b9b4d4;
+      --gold1:#c9af66; --gold2:#f2dfab; --ok:#7af0c5; --warn:#ffb46a; --danger:#ff8f8f; --shadow:0 16px 40px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box} html,body{margin:0;padding:0;min-height:100%}
+    body{color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Pretendard,"Noto Sans KR",sans-serif;
+      background:radial-gradient(circle at 18% 10%, rgba(125,83,255,.22), transparent 30%),radial-gradient(circle at 82% 18%, rgba(50,145,255,.12), transparent 28%),linear-gradient(180deg,var(--bg2),var(--bg1) 52%, #04020b);}
+    .app{max-width:560px;margin:0 auto;padding:16px 14px 34px}
+    .shell{border-radius:30px;overflow:hidden;position:relative;background:linear-gradient(180deg, rgba(18,12,40,.95), rgba(8,8,24,.95));border:1px solid var(--line);box-shadow:var(--shadow)}
+    .glow{position:absolute;left:-40px;top:-40px;width:180px;height:180px;border-radius:999px;background:radial-gradient(circle, rgba(137,95,255,.22), transparent 68%);filter:blur(12px);pointer-events:none}
+    .top{padding:20px 18px 10px;display:flex;gap:14px;align-items:center}
+    .logo{width:72px;height:72px;border-radius:22px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(180deg,#241846,#0f081f);border:1px solid rgba(255,255,255,.08)}
+    .logo img{width:100%;height:100%;object-fit:cover}
+    h1{margin:0;font-size:26px;line-height:1.05;font-weight:900;letter-spacing:-.03em}
+    .sub{margin:7px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+    .bar{padding:0 18px 14px;display:flex;gap:10px;flex-wrap:wrap}
+    .pill{min-height:46px;padding:11px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#ded7fb;font-size:14px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+    .pill.primary{background:linear-gradient(180deg,#dacfff,#bca5ff);color:#281840;border:none}
+    .content{padding:0 14px 16px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .tab-btn{min-height:54px;border-radius:18px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#ece7ff;font-size:17px;font-weight:900;cursor:pointer}
+    .tab-btn.active{background:linear-gradient(180deg,var(--gold2),var(--gold1));color:#24180a;border:none}
+    .panel{display:none;padding:14px;border-radius:26px;background:rgba(255,255,255,.03);border:1px solid var(--line)} .panel.active{display:block}
+    .status{margin-bottom:12px;padding:13px 14px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid var(--line);font-size:14px;font-weight:700;line-height:1.45}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)} .muted{color:var(--muted)}
+    .card{margin-top:12px;padding:14px;border-radius:22px;background:rgba(255,255,255,.035);border:1px solid var(--line)} .card h2{margin:0 0 12px;font-size:18px}
+    .grid{display:grid;gap:12px} .grid.two{grid-template-columns:1fr 1fr}
+    .field{display:flex;flex-direction:column;gap:7px} label{font-size:13px;color:var(--muted);font-weight:700}
+    input,select{width:100%;min-height:48px;border-radius:15px;border:1px solid var(--line);background:rgba(5,8,24,.65);color:var(--text);padding:12px 14px;font-size:15px;outline:none}
+    .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    button{min-height:52px;border-radius:18px;border:1px solid var(--line);cursor:pointer;font-size:16px;font-weight:900} button:active{transform:scale(.98)}
+    .btn-gold{background:linear-gradient(180deg,var(--gold2),var(--gold1));color:#231809;border:none}
+    .btn-dark{background:rgba(9,11,28,.84);color:#ebe5ff}
+    .btn-violet{background:linear-gradient(180deg,#d8cdff,#b89dff);color:#26163e;border:none}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{border-radius:18px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+    .stat .k{font-size:12px;color:var(--muted);margin-bottom:6px}.stat .v{font-size:20px;font-weight:900}
+    .chip{display:inline-flex;align-items:center;padding:8px 10px;border-radius:999px;margin:4px 6px 0 0;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:13px;font-weight:800}
+    .ball-row,.mini-balls{display:flex;flex-wrap:wrap;gap:8px}
+    .ball{width:42px;height:42px;border-radius:999px;display:inline-grid;place-items:center;color:#111;font-size:15px;font-weight:900;box-shadow:inset 0 1px 4px rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.28)}
+    .mini-balls .ball{width:28px;height:28px;font-size:12px}
+    .n1{background:#d3b141}.n2{background:#74c2ff}.n3{background:#ff7a7a}.n4{background:#c8c8c8}.n5{background:#7fe18f}
+    .hint{padding:12px 13px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--muted);line-height:1.45}
+    .warnbox{margin-top:10px;min-height:22px;color:var(--warn);font-size:14px;font-weight:700}
+    table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:10px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top} th{color:#cfc7ee;font-size:12px}
+    .viewer{position:relative;overflow:hidden;border-radius:22px;border:1px solid rgba(236,223,179,.22);background:#121212;min-height:320px;display:grid;place-items:center}
+    #reader{width:100%;min-height:320px}
+    .placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:18px;text-align:center;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015))}
+    .qr-box{width:min(62vw,220px);aspect-ratio:1;border:3px solid rgba(255,255,255,.16);border-radius:24px;position:relative;box-shadow:0 0 0 1px rgba(255,255,255,.03), inset 0 0 36px rgba(255,255,255,.03)}
+    .qr-box::before{content:"";position:absolute;left:8%;right:8%;height:2px;top:50%;background:linear-gradient(90deg, transparent, var(--gold2), transparent);box-shadow:0 0 12px rgba(241,223,171,.55);animation:scan 2.3s linear infinite}
+    .corner{position:absolute;width:26px;height:26px;border-color:var(--gold2);border-style:solid}.c1{left:-2px;top:-2px;border-width:4px 0 0 4px;border-top-left-radius:16px}.c2{right:-2px;top:-2px;border-width:4px 4px 0 0;border-top-right-radius:16px}.c3{left:-2px;bottom:-2px;border-width:0 0 4px 4px;border-bottom-left-radius:16px}.c4{right:-2px;bottom:-2px;border-width:0 4px 4px 0;border-bottom-right-radius:16px}
+    @keyframes scan{0%{transform:translateY(-70px)} 50%{transform:translateY(70px)} 100%{transform:translateY(-70px)}}
+    .footer{padding:8px 18px 20px;text-align:center;color:#948bb9;font-size:13px} [hidden]{display:none !important}
+    @media (max-width:420px){.grid.two,.stats,.btns{grid-template-columns:1fr} h1{font-size:23px} .top{align-items:flex-start}}
+  </style>
+</head>
+<body>
+<div class="app"><div class="shell"><div class="glow"></div>
+  <div class="top">
+    <div class="logo"><img src="./icon-192.png" alt="CloveQ 아이콘"></div>
+    <div><h1>CloveQ Quick QR Lotto</h1><div class="sub">처음부터 다시 만든 깔끔한 구조 · 로또 자동 분석 + QR 스캔</div></div>
+  </div>
+  <div class="bar">
+    <div class="pill" id="dataBadge">데이터 확인 중</div>
+    <button class="pill primary" id="refreshBtn" type="button">데이터 새로고침</button>
+  </div>
+  <div class="content">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="lotto" type="button">로또 추첨</button>
+      <button class="tab-btn" data-tab="qr" type="button">QR 스캔</button>
+    </div>
+
+    <section class="panel active" id="panel-lotto">
+      <div class="status" id="lottoStatus"><span class="muted">대기 중.</span> ./lotto_recent_year.json 자동 로드 준비 중</div>
+      <div class="card"><h2>분석 요약</h2>
+        <div class="stats">
+          <div class="stat"><div class="k">총 회차 수</div><div class="v" id="totalRounds">-</div></div>
+          <div class="stat"><div class="k">최신 회차</div><div class="v" id="latestRound">-</div></div>
+          <div class="stat"><div class="k">번호합 평균</div><div class="v" id="avgSum">-</div></div>
+          <div class="stat"><div class="k">최다 출현</div><div class="v" id="topNumber">-</div></div>
+        </div>
+      </div>
+
+      <div class="card"><h2>추첨 옵션</h2>
+        <div class="grid two">
+          <div class="field"><label for="modeSelect">추첨 모드</label>
+            <select id="modeSelect">
+              <option value="random">완전 랜덤</option>
+              <option value="hot">자주 나온 번호 가중치</option>
+              <option value="cold">덜 나온 번호 가중치</option>
+              <option value="balanced">혼합형</option>
+            </select>
+          </div>
+          <div class="field"><label for="setCount">생성 세트 수</label>
+            <select id="setCount"><option>1</option><option>2</option><option selected>5</option><option>7</option><option>10</option></select>
+          </div>
+          <div class="field"><label for="recentAvoidCount">최근 회차 회피 범위</label>
+            <select id="recentAvoidCount"><option value="0" selected>회피 안 함</option><option value="1">최근 1회차</option><option value="3">최근 3회차</option><option value="5">최근 5회차</option><option value="10">최근 10회차</option></select>
+          </div>
+          <div class="field"><label for="fixedNumbers">고정 번호</label><input id="fixedNumbers" type="text" placeholder="예: 3, 11, 27" /></div>
+        </div>
+        <div class="grid" style="margin-top:12px;">
+          <div class="field"><label for="excludeNumbers">제외 번호</label><input id="excludeNumbers" type="text" placeholder="예: 5, 12, 41" /></div>
+        </div>
+        <div class="btns" style="margin-top:12px;">
+          <button class="btn-gold" id="drawBtn" type="button">추첨 시작</button>
+          <button class="btn-dark" id="loadDefaultBtn" type="button">JSON 다시 읽기</button>
+        </div>
+        <div class="warnbox" id="drawWarning"></div>
+        <div class="hint" style="margin-top:12px;">이 버전은 오직 <b>./lotto_recent_year.json</b>만 자동으로 읽어.</div>
+      </div>
+
+      <div class="card"><h2>추첨 결과</h2><div id="drawResults"><div class="hint">데이터를 읽고 추첨 시작을 누르면 여기 결과가 나와.</div></div></div>
+      <div class="card"><h2>핫 넘버 TOP 10</h2><div id="hotList"></div></div>
+      <div class="card"><h2>콜드 넘버 TOP 10</h2><div id="coldList"></div></div>
+
+      <div class="card"><h2>최근 회차 보기</h2>
+        <div class="grid two">
+          <div class="field"><label for="roundSelect">회차 선택</label><select id="roundSelect"></select></div>
+          <div class="field"><label>&nbsp;</label><button class="btn-violet" id="showRoundBtn" type="button">회차 데이터 보기</button></div>
+        </div>
+        <div id="roundDetail" class="hint" style="margin-top:12px;">회차를 고르면 상세 정보가 나와.</div>
+      </div>
+
+      <div class="card"><h2>최근 회차 목록</h2>
+        <div style="overflow:auto;">
+          <table>
+            <thead><tr><th>회차</th><th>날짜</th><th>번호</th><th>보너스</th></tr></thead>
+            <tbody id="recentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-qr">
+      <div class="status" id="qrStatus"><span class="muted">대기 중.</span> QR 스캔 시작 버튼을 누를 때만 카메라 권한을 요청해.</div>
+      <div class="card"><h2>QR 스캐너</h2>
+        <div class="viewer">
+          <div id="reader"></div>
+          <div class="placeholder" id="placeholder">
+            <div>
+              <div class="qr-box"><div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div></div>
+              <p style="margin:18px 0 0;font-size:18px;font-weight:900">버튼 눌렀을 때만 카메라 켜짐</p>
+              <p style="margin:10px auto 0;max-width:290px;color:#aaa3ca;font-size:12px;line-height:1.55">같은 주소를 계속 쓰면 권한 반복 요청이 줄어들 수 있어.</p>
+            </div>
+          </div>
+        </div>
+        <div class="btns" style="margin-top:12px;">
+          <button class="btn-gold" id="startBtn" type="button">QR 스캔 시작</button>
+          <button class="btn-dark" id="stopBtn" type="button">카메라 끄기</button>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h2>QR 결과</h2>
+          <div id="qrResult" class="hint">아직 인식된 QR 내용이 없어.</div>
+          <div class="btns" style="margin-top:12px;">
+            <button class="btn-violet" id="copyQrBtn" type="button">결과 복사</button>
+            <button class="btn-dark" id="openQrBtn" type="button">링크 열기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="footer">CloveQ Quick QR Lotto · clean rebuild</div>
+</div></div>
+
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script>
+const $ = id => document.getElementById(id);
+const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+const panels = { lotto: $('panel-lotto'), qr: $('panel-qr') };
+function switchTab(name){ tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name)); Object.entries(panels).forEach(([key,panel]) => panel.classList.toggle('active', key === name)); }
+tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+function nowText(){ const d = new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function setDataBadge(text){ $('dataBadge').textContent = text; }
+function setLottoStatus(html){ $('lottoStatus').innerHTML = html; }
+function setQrStatus(html){ $('qrStatus').innerHTML = html; }
+setDataBadge(`자동 로드 확인 중 · ${nowText()}`);
+
+let lottoData = [];
+let frequency = {};
+function parseNumList(text){ if(!String(text||'').trim()) return []; const nums = String(text).split(',').map(v => Number(String(v).trim())).filter(v => Number.isInteger(v) && v >= 1 && v <= 45); return [...new Set(nums)]; }
+function uniqueSorted(nums){ return [...new Set(nums)].sort((a,b)=>a-b); }
+function getBallClass(n){ if(n<=10) return 'n1'; if(n<=20) return 'n2'; if(n<=30) return 'n3'; if(n<=40) return 'n4'; return 'n5'; }
+function ball(n){ return `<span class="ball ${getBallClass(n)}">${n}</span>`; }
+function miniBalls(nums){ return `<div class="mini-balls">${(nums||[]).map(ball).join('')}</div>`; }
+function average(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function computeFrequency(data){ const count={}; for(let i=1;i<=45;i++) count[i]=0; data.forEach(row => (row.numbers||[]).forEach(n => { if(count[n] !== undefined) count[n]+=1; })); return count; }
+function scoreList(desc=true){ return Object.entries(frequency).map(([n,c]) => ({number:Number(n), count:c})).sort((a,b) => desc ? (b.count-a.count || a.number-b.number) : (a.count-b.count || a.number-b.number)); }
+
+function refreshAnalysis(){
+  if(!lottoData.length){ setLottoStatus('<span class="danger">데이터가 없어서 분석할 수 없어.</span>'); return; }
+  frequency = computeFrequency(lottoData);
+  const latest = [...lottoData].sort((a,b)=>b.round-a.round)[0];
+  const sums = lottoData.map(v => (v.numbers||[]).reduce((a,b)=>a+b,0));
+  const hot = scoreList(true).slice(0,10);
+  const cold = scoreList(false).slice(0,10);
+  $('totalRounds').textContent = lottoData.length;
+  $('latestRound').textContent = latest?.round ?? '-';
+  $('avgSum').textContent = average(sums).toFixed(1);
+  $('topNumber').textContent = hot[0] ? `${hot[0].number}번` : '-';
+  $('hotList').innerHTML = hot.map(v => `<span class="chip">${v.number}번 · ${v.count}회</span>`).join('');
+  $('coldList').innerHTML = cold.map(v => `<span class="chip">${v.number}번 · ${v.count}회</span>`).join('');
+  const recent = [...lottoData].sort((a,b)=>b.round-a.round).slice(0,12);
+  $('recentTableBody').innerHTML = recent.map(row => `<tr><td>${row.round}</td><td>${row.draw_date || '-'}</td><td>${miniBalls(row.numbers)}</td><td>${row.bonus ?? '-'}</td></tr>`).join('');
+  const sortedRounds = [...lottoData].sort((a,b)=>b.round-a.round);
+  $('roundSelect').innerHTML = sortedRounds.map(row => `<option value="${row.round}">${row.round}회</option>`).join('');
+  if(sortedRounds[0]) showRoundDetail(sortedRounds[0].round);
+  setDataBadge(`자동 로드 완료 · ${latest?.round ?? '-'}회차 · ${nowText()}`);
+  setLottoStatus(`<span class="ok">데이터 로드 완료</span> · ${lottoData.length}회차 분석 끝`);
+}
+
+function showRoundDetail(round){
+  const item = lottoData.find(v => Number(v.round) === Number(round));
+  if(!item){ $('roundDetail').innerHTML = '해당 회차를 찾지 못했어.'; return; }
+  const sum = (item.numbers||[]).reduce((a,b)=>a+b,0);
+  const odd = (item.numbers||[]).filter(v => v % 2 === 1).length;
+  const even = (item.numbers||[]).length - odd;
+  $('roundDetail').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;"><strong>${item.round}회차</strong><span class="chip">${item.draw_date || '-'}</span></div><div class="ball-row" style="margin-bottom:10px;">${(item.numbers||[]).map(ball).join('')}</div><div><span class="chip">보너스 ${item.bonus ?? '-'}</span><span class="chip">번호합 ${sum}</span><span class="chip">홀수 ${odd}</span><span class="chip">짝수 ${even}</span></div>`;
+}
+
+function applyData(json){
+  if(!Array.isArray(json)) throw new Error('JSON 최상위 구조가 배열이 아니야.');
+  const cleaned = json.filter(v => v && typeof v === 'object' && Array.isArray(v.numbers)).map(v => ({
+    round:Number(v.round), draw_date:String(v.draw_date || ''), numbers:uniqueSorted(v.numbers.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 45)), bonus:Number(v.bonus) || ''
+  })).filter(v => v.round && v.numbers.length === 6).sort((a,b)=>a.round-b.round);
+  if(!cleaned.length) throw new Error('유효한 회차 데이터가 없어.');
+  lottoData = cleaned;
+  refreshAnalysis();
+}
+
+async function loadDefaultJson(){
+  try{
+    setLottoStatus('<span class="muted">기본 JSON 파일을 불러오는 중...</span>');
+    const res = await fetch('./lotto_recent_year.json?v=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) throw new Error('기본 JSON 요청 실패');
+    const json = await res.json();
+    applyData(json);
+  }catch(err){
+    console.error(err);
+    setLottoStatus('<span class="danger">기본 JSON 불러오기에 실패했어.</span> 파일명이 lotto_recent_year.json 인지 확인해줘.');
+  }
+}
+
+function weightedPick(pool, weightMap){
+  const entries = pool.map(n => ({n, w: Math.max(0.0001, Number(weightMap[n] || 1))}));
+  const total = entries.reduce((acc,cur) => acc + cur.w, 0);
+  let r = Math.random() * total;
+  for(const item of entries){ r -= item.w; if(r <= 0) return item.n; }
+  return entries[entries.length - 1]?.n;
+}
+
+function buildCombination({mode, fixed, exclude, recentAvoidCount}){
+  const blocked = new Set(exclude);
+  const recent = [...lottoData].sort((a,b)=>b.round-a.round).slice(0, recentAvoidCount);
+  recent.forEach(row => (row.numbers||[]).forEach(n => blocked.add(n)));
+  const fixedOk = fixed.filter(n => !blocked.has(n));
+  if(fixedOk.length !== fixed.length) throw new Error('고정 번호와 제외/회피 번호가 겹쳐.');
+  if(fixedOk.length > 5) throw new Error('고정 번호는 5개까지만 가능해.');
+  const selected = [...fixedOk];
+  let pool = [];
+  for(let i=1;i<=45;i++){ if(!blocked.has(i) && !selected.includes(i)) pool.push(i); }
+  if(selected.length + pool.length < 6) return null;
+
+  while(selected.length < 6){
+    let pick = null;
+    if(mode === 'random'){ pick = pool[Math.floor(Math.random() * pool.length)]; }
+    else if(mode === 'hot'){ const weightMap={}; pool.forEach(n => weightMap[n] = (frequency[n] || 0) + 1); pick = weightedPick(pool, weightMap); }
+    else if(mode === 'cold'){ const max = Math.max(...Object.values(frequency || {1:1})); const weightMap={}; pool.forEach(n => weightMap[n] = (max - (frequency[n] || 0)) + 1); pick = weightedPick(pool, weightMap); }
+    else{
+      const max = Math.max(...Object.values(frequency || {1:1})); const hotWeight={}; const coldWeight={};
+      pool.forEach(n => { hotWeight[n] = (frequency[n] || 0) + 1; coldWeight[n] = (max - (frequency[n] || 0)) + 1; });
+      pick = Math.random() < 0.5 ? weightedPick(pool, hotWeight) : weightedPick(pool, coldWeight);
+    }
+    if(!Number.isInteger(pick)) return null;
+    selected.push(pick); pool = pool.filter(v => v !== pick);
+  }
+  return uniqueSorted(selected);
+}
+
+function renderDrawResults(sets, mode){
+  const modeName = { random:'완전 랜덤', hot:'자주 나온 번호 가중치', cold:'덜 나온 번호 가중치', balanced:'혼합형' }[mode] || mode;
+  if(!sets.length){ $('drawResults').innerHTML = '<div class="hint"><span class="warn">조건에 맞는 결과를 만들지 못했어.</span></div>'; return; }
+  $('drawResults').innerHTML = `<div style="margin-bottom:12px;"><span class="chip"><strong>${modeName}</strong></span><span class="chip">${sets.length}세트 생성</span></div>${sets.map((set, idx) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;"><strong>${idx+1}세트</strong><span class="chip">번호합 ${set.reduce((a,b)=>a+b,0)}</span></div><div class="ball-row">${set.map(ball).join('')}</div></div>`).join('')}`;
+}
+
+function generateSets(){
+  $('drawWarning').textContent = '';
+  if(!lottoData.length){ $('drawWarning').textContent = '먼저 JSON 데이터를 읽어야 해.'; return; }
+  const mode = $('modeSelect').value;
+  const setCount = Number($('setCount').value);
+  const recentAvoidCount = Number($('recentAvoidCount').value);
+  const fixed = parseNumList($('fixedNumbers').value);
+  const exclude = parseNumList($('excludeNumbers').value);
+  if(fixed.length >= 6){ $('drawWarning').textContent = '고정 번호는 5개까지만 넣어줘.'; return; }
+
+  try{
+    const out = [];
+    let guard = 0;
+    while(out.length < setCount && guard < 12000){
+      guard++;
+      const combo = buildCombination({mode, fixed, exclude, recentAvoidCount});
+      if(!combo) continue;
+      const key = combo.join('-');
+      if(out.some(v => v.join('-') === key)) continue;
+      out.push(combo);
+    }
+    if(out.length < setCount){ $('drawWarning').textContent = '조건이 너무 빡빡해서 일부 세트만 만들었어. 범위를 조금 줄여봐.'; }
+    renderDrawResults(out, mode);
+  }catch(err){
+    $('drawWarning').textContent = err.message || '추첨 중 문제가 생겼어.';
+  }
+}
+
+let html5QrCode = null;
+let scanning = false;
+let lastQrText = '';
+
+async function stopScanner(){
+  if(!html5QrCode) return;
+  try{ if(scanning){ await html5QrCode.stop(); scanning = false; } }catch(e){ console.warn(e); }
+  try{ await html5QrCode.clear(); }catch(e){ console.warn(e); }
+  $('placeholder').hidden = false;
+  setQrStatus('<span class="muted">카메라가 꺼졌어.</span> 다시 시작 버튼을 누르면 다시 스캔해.');
+}
+
+async function startScanner(){
+  if(scanning) return;
+  if(!window.Html5Qrcode){ setQrStatus('<span class="danger">QR 라이브러리를 불러오지 못했어.</span>'); return; }
+  try{
+    setQrStatus('<span class="muted">카메라 준비 중...</span> 이 순간에만 권한 요청이 뜰 수 있어.');
+    $('placeholder').hidden = true;
+    if(!html5QrCode){ html5QrCode = new Html5Qrcode('reader'); }
+    const cameras = await Html5Qrcode.getCameras();
+    if(!cameras || !cameras.length) throw new Error('사용 가능한 카메라가 없어.');
+    const preferredCamera = cameras.find(c => /back|rear|environment|후면/i.test(c.label || '')) || cameras[0];
+    await html5QrCode.start(
+      { deviceId: { exact: preferredCamera.id } },
+      { fps:10, qrbox:(vw, vh) => { const size = Math.floor(Math.min(vw, vh) * 0.72); return { width:size, height:size }; } },
+      decodedText => { lastQrText = decodedText; $('qrResult').innerHTML = `<div style="word-break:break-all">${decodedText}</div>`; setQrStatus('<span class="ok">QR 인식 성공!</span>'); },
+      () => {}
+    );
+    scanning = true;
+    setQrStatus('<span class="ok">카메라 실행 중!</span> 버튼 눌렀을 때만 권한을 요청하는 구조야.');
+  }catch(error){
+    $('placeholder').hidden = false;
+    const raw = String(error && error.message ? error.message : error);
+    let message = '카메라를 시작하지 못했어.';
+    if(/Permission|NotAllowed|denied|허용/i.test(raw)) message = '카메라 권한이 거부됐어. 주소창 자물쇠 메뉴에서 허용해줘.';
+    else if(/secure|https/i.test(raw)) message = '카메라는 HTTPS 주소에서 안정적으로 동작해.';
+    else if(/camera|device/i.test(raw)) message = '카메라 장치를 찾지 못했어. 다른 앱이 카메라를 쓰는지 확인해줘.';
+    setQrStatus(`<span class="danger">${message}</span><br><span class="muted" style="font-size:12px">${raw}</span>`);
+  }
+}
+
+$('refreshBtn').addEventListener('click', loadDefaultJson);
+$('loadDefaultBtn').addEventListener('click', loadDefaultJson);
+$('drawBtn').addEventListener('click', generateSets);
+$('showRoundBtn').addEventListener('click', () => showRoundDetail(Number($('roundSelect').value)));
+$('roundSelect').addEventListener('change', e => showRoundDetail(Number(e.target.value)));
+$('startBtn').addEventListener('click', () => { switchTab('qr'); startScanner(); });
+$('stopBtn').addEventListener('click', stopScanner);
+$('copyQrBtn').addEventListener('click', async () => {
+  if(!lastQrText){ setQrStatus('<span class="warn">복사할 QR 결과가 아직 없어.</span>'); return; }
+  try{ await navigator.clipboard.writeText(lastQrText); setQrStatus('<span class="ok">QR 결과를 복사했어.</span>'); }catch(e){ setQrStatus('<span class="danger">복사에 실패했어.</span>'); }
+});
+$('openQrBtn').addEventListener('click', () => {
+  if(!lastQrText){ setQrStatus('<span class="warn">열 링크가 아직 없어.</span>'); return; }
+  if(/^https?:\/\//i.test(lastQrText)) window.open(lastQrText, '_blank', 'noopener,noreferrer');
+  else setQrStatus('<span class="warn">이 결과는 링크 형식이 아니야.</span>');
+});
+
+window.addEventListener('beforeunload', async () => { if(html5QrCode && scanning){ try{ await html5QrCode.stop(); }catch(e){} } });
+if('serviceWorker' in navigator){ window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); }); }
+loadDefaultJson();
+</script>
+</body>
+</html>
