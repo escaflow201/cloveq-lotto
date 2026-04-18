@@ -68,11 +68,11 @@
 <div class="app"><div class="shell"><div class="glow"></div>
   <div class="top">
     <div class="logo"><img src="./icon-192.png" alt="CloveQ 아이콘"></div>
-    <div><h1>CloveQ Quick QR Lotto</h1><div class="sub">자동 10회차 실시간 동기화 · 로또 분석 + QR 스캔</div></div>
+    <div><h1>CloveQ Quick QR Lotto</h1><div class="sub">최신 10회차 자동 업데이트 로직 반영</div></div>
   </div>
   <div class="bar">
-    <div class="pill" id="dataBadge">데이터 확인 중</div>
-    <button class="pill primary" id="refreshBtn" type="button">데이터 새로고침</button>
+    <div class="pill" id="dataBadge">데이터 로드 대기 중</div>
+    <button class="pill primary" id="refreshBtn" type="button">수동 새로고침</button>
   </div>
   <div class="content">
     <div class="tabs">
@@ -81,13 +81,14 @@
     </div>
 
     <section class="panel active" id="panel-lotto">
-      <div class="status" id="lottoStatus"><span class="muted">대기 중.</span> ./lotto_recent_year.json 자동 로드 중</div>
-      <div class="card"><h2>최근 10회차 분석 요약</h2>
+      <div class="status" id="lottoStatus"><span class="muted">대기 중...</span></div>
+      
+      <div class="card"><h2>분석 요약 (최근 10회차 기준)</h2>
         <div class="stats">
-          <div class="stat"><div class="k">분석 회차 수</div><div class="v" id="totalRounds">-</div></div>
+          <div class="stat"><div class="k">데이터 수</div><div class="v" id="totalRounds">-</div></div>
           <div class="stat"><div class="k">최신 회차</div><div class="v" id="latestRound">-</div></div>
-          <div class="stat"><div class="k">평균 합계</div><div class="v" id="avgSum">-</div></div>
-          <div class="stat"><div class="k">가장 많이 나옴</div><div class="v" id="topNumber">-</div></div>
+          <div class="stat"><div class="k">번호합 평균</div><div class="v" id="avgSum">-</div></div>
+          <div class="stat"><div class="k">최다 빈도</div><div class="v" id="topNumber">-</div></div>
         </div>
       </div>
 
@@ -96,46 +97,45 @@
           <div class="field"><label for="modeSelect">추첨 모드</label>
             <select id="modeSelect">
               <option value="random">완전 랜덤</option>
-              <option value="hot">최근 10회 핫넘버 위주</option>
-              <option value="cold">최근 10회 콜드넘버 위주</option>
-              <option value="balanced">혼합형</option>
+              <option value="hot">최근 10회 핫넘버 기반</option>
+              <option value="cold">최근 10회 콜드넘버 기반</option>
+              <option value="balanced">혼합 가중치</option>
             </select>
           </div>
           <div class="field"><label for="setCount">생성 세트 수</label>
             <select id="setCount"><option>1</option><option>2</option><option selected>5</option><option>7</option><option>10</option></select>
           </div>
-          <div class="field"><label for="recentAvoidCount">최근 회차 회피 범위</label>
-            <select id="recentAvoidCount"><option value="0" selected>회피 안 함</option><option value="1">최근 1회차</option><option value="3">최근 3회차</option><option value="5">최근 5회차</option></select>
+          <div class="field"><label for="recentAvoidCount">최근 회차 회피</label>
+            <select id="recentAvoidCount"><option value="0" selected>사용 안 함</option><option value="1">최근 1회차</option><option value="3">최근 3회차</option><option value="5">최근 5회차</option></select>
           </div>
-          <div class="field"><label for="fixedNumbers">고정 번호</label><input id="fixedNumbers" type="text" placeholder="예: 3, 11" /></div>
+          <div class="field"><label for="fixedNumbers">고정 번호</label><input id="fixedNumbers" type="text" placeholder="예: 7, 14" /></div>
         </div>
         <div class="grid" style="margin-top:12px;">
-          <div class="field"><label for="excludeNumbers">제외 번호</label><input id="excludeNumbers" type="text" placeholder="예: 5, 12" /></div>
+          <div class="field"><label for="excludeNumbers">제외 번호</label><input id="excludeNumbers" type="text" placeholder="예: 1, 45" /></div>
         </div>
         <div class="btns" style="margin-top:12px;">
-          <button class="btn-gold" id="drawBtn" type="button">추첨 시작</button>
+          <button class="btn-gold" id="drawBtn" type="button">번호 생성</button>
           <button class="btn-dark" id="loadDefaultBtn" type="button">데이터 갱신</button>
         </div>
         <div class="warnbox" id="drawWarning"></div>
-        <div class="hint" style="margin-top:12px;">이 버전은 <b>GitHub Actions</b>에서 업데이트된 파일을 실시간으로 읽습니다.</div>
       </div>
 
-      <div class="card"><h2>추첨 결과</h2><div id="drawResults"><div class="hint">추첨 시작을 누르면 여기에 결과가 나옵니다.</div></div></div>
-      <div class="card"><h2>최근 10회 핫 넘버</h2><div id="hotList"></div></div>
-      <div class="card"><h2>최근 10회 콜드 넘버</h2><div id="coldList"></div></div>
+      <div class="card"><h2>추첨 결과</h2><div id="drawResults"><div class="hint">추첨을 시작해 주세요.</div></div></div>
+      <div class="card"><h2>최근 10회 핫 넘버 TOP 10</h2><div id="hotList"></div></div>
+      <div class="card"><h2>최근 10회 콜드 넘버 TOP 10</h2><div id="coldList"></div></div>
 
-      <div class="card"><h2>회차 상세보기</h2>
+      <div class="card"><h2>회차별 결과 보기</h2>
         <div class="grid two">
           <div class="field"><label for="roundSelect">회차 선택</label><select id="roundSelect"></select></div>
-          <div class="field"><label>&nbsp;</label><button class="btn-violet" id="showRoundBtn" type="button">조회하기</button></div>
+          <div class="field"><label>&nbsp;</label><button class="btn-violet" id="showRoundBtn" type="button">상세 보기</button></div>
         </div>
-        <div id="roundDetail" class="hint" style="margin-top:12px;">상세 정보가 여기에 표시됩니다.</div>
+        <div id="roundDetail" class="hint" style="margin-top:12px;">정보가 표시됩니다.</div>
       </div>
 
-      <div class="card"><h2>최근 회차 목록 (Top 10)</h2>
+      <div class="card"><h2>최근 10개 회차 목록</h2>
         <div style="overflow:auto;">
           <table>
-            <thead><tr><th>회차</th><th>날짜</th><th>번호</th><th>보너스</th></tr></thead>
+            <thead><tr><th>회차</th><th>날짜</th><th>당첨번호</th><th>보너스</th></tr></thead>
             <tbody id="recentTableBody"></tbody>
           </table>
         </div>
@@ -143,24 +143,21 @@
     </section>
 
     <section class="panel" id="panel-qr">
-      <div class="status" id="qrStatus"><span class="muted">대기 중.</span> 스캔 버튼을 누르면 카메라가 켜집니다.</div>
-      <div class="card"><h2>QR 스캐너</h2>
+      <div class="status" id="qrStatus">QR 스캐너 준비 중</div>
+      <div class="card"><h2>스캐너</h2>
         <div class="viewer">
           <div id="reader"></div>
           <div class="placeholder" id="placeholder">
-            <div>
-              <div class="qr-box"><div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div></div>
-              <p style="margin:18px 0 0;font-size:18px;font-weight:900">QR 코드를 보여주세요</p>
-            </div>
+            <div class="qr-box"><div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div></div>
           </div>
         </div>
         <div class="btns" style="margin-top:12px;">
           <button class="btn-gold" id="startBtn" type="button">스캔 시작</button>
-          <button class="btn-dark" id="stopBtn" type="button">카메라 끄기</button>
+          <button class="btn-dark" id="stopBtn" type="button">끄기</button>
         </div>
         <div class="card" style="margin-top:12px;">
-          <h2>QR 결과</h2>
-          <div id="qrResult" class="hint">결과가 여기에 표시됩니다.</div>
+          <h2>결과</h2>
+          <div id="qrResult" class="hint">데이터 없음</div>
           <div class="btns" style="margin-top:12px;">
             <button class="btn-violet" id="copyQrBtn" type="button">복사</button>
             <button class="btn-dark" id="openQrBtn" type="button">링크 이동</button>
@@ -169,222 +166,143 @@
       </div>
     </section>
   </div>
-  <div class="footer">CloveQ Quick QR Lotto · Real-time Auto Update</div>
+  <div class="footer">CloveQ Quick QR Lotto · Clean Auto-Update</div>
 </div></div>
 
 <script src="https://unpkg.com/html5-qrcode" defer></script>
 <script>
 const $ = id => document.getElementById(id);
-const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+const tabButtons = document.querySelectorAll('.tab-btn');
 const panels = { lotto: $('panel-lotto'), qr: $('panel-qr') };
 
 function switchTab(name){ 
   tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name)); 
-  Object.entries(panels).forEach(([key,panel]) => panel.classList.toggle('active', key === name)); 
+  Object.entries(panels).forEach(([key,p]) => p.classList.toggle('active', key === name)); 
 }
 tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-
-function nowText(){ const d = new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
-function setDataBadge(text){ $('dataBadge').textContent = text; }
-function setLottoStatus(html){ $('lottoStatus').innerHTML = html; }
-function setQrStatus(html){ $('qrStatus').innerHTML = html; }
 
 let lottoData = [];
 let frequency = {};
 
-function parseNumList(text){ 
-  if(!String(text||'').trim()) return []; 
-  const nums = String(text).split(',').map(v => Number(String(v).trim())).filter(v => Number.isInteger(v) && v >= 1 && v <= 45); 
-  return [...new Set(nums)]; 
-}
+function nowText(){ const d = new Date(); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function setLottoStatus(h){ $('lottoStatus').innerHTML = h; }
 
-function uniqueSorted(nums){ return [...new Set(nums)].sort((a,b)=>a-b); }
-function getBallClass(n){ if(n<=10) return 'n1'; if(n<=20) return 'n2'; if(n<=30) return 'n3'; if(n<=40) return 'n4'; return 'n5'; }
-function ball(n){ return `<span class="ball ${getBallClass(n)}">${n}</span>`; }
-function miniBalls(nums){ return `<div class="mini-balls">${(nums||[]).map(ball).join('')}</div>`; }
-function average(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function parseNumList(t){ return (t||'').split(',').map(v=>Number(v.trim())).filter(v=>v>=1 && v<=45); }
+function ball(n){ return `<span class="ball ${n<=10?'n1':n<=20?'n2':n<=30?'n3':n<=40?'n4':'n5'}">${n}</span>`; }
 
-function computeFrequency(data){ 
-  const count={}; for(let i=1;i<=45;i++) count[i]=0; 
-  data.forEach(row => (row.numbers||[]).forEach(n => { if(count[n] !== undefined) count[n]+=1; })); 
-  return count; 
-}
-
-function scoreList(desc=true){ 
-  return Object.entries(frequency).map(([n,c]) => ({number:Number(n), count:c}))
-    .sort((a,b) => desc ? (b.count-a.count || a.number-b.number) : (a.count-b.count || a.number-b.number)); 
-}
-
-// 핵심: 데이터 새로고침 및 UI 갱신 함수
 function refreshAnalysis(){
-  if(!lottoData.length){ setLottoStatus('<span class="danger">데이터 분석 실패.</span>'); return; }
+  if(!lottoData.length) return;
+  const sorted = [...lottoData].sort((a,b)=>b.round-a.round);
+  frequency = {}; for(let i=1;i<=45;i++) frequency[i]=0;
+  lottoData.forEach(r => r.numbers.forEach(n => frequency[n]++));
   
-  // 회차 역순 정렬
-  const sortedRounds = [...lottoData].sort((a,b)=>b.round-a.round);
-  frequency = computeFrequency(lottoData);
-  
-  const latest = sortedRounds[0];
-  const sums = lottoData.map(v => (v.numbers||[]).reduce((a,b)=>a+b,0));
-  const hot = scoreList(true).slice(0, 10);
-  const cold = scoreList(false).slice(0, 10);
+  const latest = sorted[0];
+  const sums = lottoData.map(r => r.numbers.reduce((a,b)=>a+b,0));
+  const scored = Object.entries(frequency).map(([n,c])=>({n:Number(n),c})).sort((a,b)=>b.c-a.c || a.n-b.n);
 
   $('totalRounds').textContent = lottoData.length;
-  $('latestRound').textContent = latest?.round ? `${latest.round}회` : '-';
-  $('avgSum').textContent = average(sums).toFixed(1);
-  $('topNumber').textContent = hot[0] ? `${hot[0].number}번` : '-';
+  $('latestRound').textContent = latest.round + '회';
+  $('avgSum').textContent = (sums.reduce((a,b)=>a+b,0)/sums.length).toFixed(1);
+  $('topNumber').textContent = scored[0].n + '번';
   
-  $('hotList').innerHTML = hot.map(v => `<span class="chip">${v.number}번(${v.count}회)</span>`).join('');
-  $('coldList').innerHTML = cold.map(v => `<span class="chip">${v.number}번(${v.count}회)</span>`).join('');
-
-  // 최근 10회차 테이블
-  $('recentTableBody').innerHTML = sortedRounds.slice(0, 10).map(row => `
-    <tr><td>${row.round}</td><td>${row.draw_date || '-'}</td><td>${miniBalls(row.numbers)}</td><td>${row.bonus ?? '-'}</td></tr>
-  `).join('');
-
-  $('roundSelect').innerHTML = sortedRounds.map(row => `<option value="${row.round}">${row.round}회</option>`).join('');
-  if(latest) showRoundDetail(latest.round);
-
-  setDataBadge(`실시간 동기화됨 · ${latest?.round ?? '-'}회차 · ${nowText()}`);
-  setLottoStatus(`<span class="ok">데이터 로드 성공</span> · 최신 ${lottoData.length}회차 분석 완료`);
+  $('hotList').innerHTML = scored.slice(0,10).map(v=>`<span class="chip">${v.n}번(${v.c}회)</span>`).join('');
+  $('coldList').innerHTML = [...scored].reverse().slice(0,10).map(v=>`<span class="chip">${v.n}번(${v.c}회)</span>`).join('');
+  
+  $('recentTableBody').innerHTML = sorted.slice(0,10).map(r => `<tr><td>${r.round}</td><td>${r.draw_date}</td><td><div class="mini-balls">${r.numbers.map(ball).join('')}</div></td><td>${r.bonus}</td></tr>`).join('');
+  $('roundSelect').innerHTML = sorted.map(r => `<option value="${r.round}">${r.round}회</option>`).join('');
+  
+  showRoundDetail(latest.round);
+  $('dataBadge').textContent = `로드 완료 (${latest.round}회) · ${nowText()}`;
+  setLottoStatus('<span class="ok">최신 데이터 로드 성공</span>');
 }
 
-function showRoundDetail(round){
-  const item = lottoData.find(v => Number(v.round) === Number(round));
+function showRoundDetail(rNum){
+  const item = lottoData.find(v => v.round == rNum);
   if(!item) return;
-  const sum = (item.numbers||[]).reduce((a,b)=>a+b,0);
-  $('roundDetail').innerHTML = `
-    <div style="margin-bottom:8px;"><strong>${item.round}회 (${item.draw_date})</strong></div>
-    <div class="ball-row" style="margin-bottom:8px;">${(item.numbers||[]).map(ball).join('')}</div>
-    <div><span class="chip">보너스 ${item.bonus}</span><span class="chip">합계 ${sum}</span></div>
-  `;
+  const sum = item.numbers.reduce((a,b)=>a+b,0);
+  $('roundDetail').innerHTML = `<strong>${item.round}회</strong> (${item.draw_date})<div class="ball-row" style="margin:8px 0">${item.numbers.map(ball).join('')}</div><div>합계: ${sum} / 보너스: ${item.bonus}</div>`;
 }
 
-function applyData(json){
-  if(!Array.isArray(json)) return;
-  const cleaned = json.map(v => ({
-    round: Number(v.round), 
-    draw_date: v.draw_date, 
-    numbers: uniqueSorted(v.numbers.map(Number)), 
-    bonus: Number(v.bonus)
-  })).sort((a,b)=>a.round-b.round);
-  lottoData = cleaned;
-  refreshAnalysis();
-}
-
-// 핵심: 캐시 방지 fetch 로직
 async function loadDefaultJson(){
   try{
-    setLottoStatus('<span class="muted">최신 정보를 깃허브에서 가져오는 중...</span>');
-    const res = await fetch(`./lotto_recent_year.json?v=${Date.now()}`, { cache: 'no-store' });
-    if(!res.ok) throw new Error();
+    setLottoStatus('<span class="muted">데이터 동기화 중...</span>');
+    // 캐시 방지 쿼리스트링 v=Date.now()
+    const res = await fetch('./lotto_recent_year.json?v=' + Date.now(), { cache: 'no-store' });
     const json = await res.json();
-    applyData(json);
-  }catch(err){
-    setLottoStatus('<span class="danger">데이터 로드 실패.</span> JSON 파일 확인이 필요해.');
+    lottoData = json.map(v=>({round:v.round, draw_date:v.draw_date, numbers:v.numbers.sort((a,b)=>a-b), bonus:v.bonus}));
+    refreshAnalysis();
+  }catch(e){
+    setLottoStatus('<span class="danger">데이터 로드 실패. lotto_recent_year.json 파일을 확인해줘.</span>');
   }
 }
 
-// 추첨 로직 (Weighted Random 적용)
-function weightedPick(pool, weightMap){
-  const entries = pool.map(n => ({n, w: Math.max(0.1, weightMap[n] || 1)}));
-  const total = entries.reduce((acc,cur) => acc + cur.w, 0);
-  let r = Math.random() * total;
-  for(const item of entries){ r -= item.w; if(r <= 0) return item.n; }
-  return entries[entries.length-1].n;
-}
-
-function buildCombination({mode, fixed, exclude, recentAvoidCount}){
-  const blocked = new Set(exclude);
-  const sorted = [...lottoData].sort((a,b)=>b.round-a.round).slice(0, recentAvoidCount);
-  sorted.forEach(row => row.numbers.forEach(n => blocked.add(n)));
-  
-  const selected = [...fixed].filter(n => !blocked.has(n));
-  let pool = [];
-  for(let i=1; i<=45; i++) if(!blocked.has(i) && !selected.includes(i)) pool.push(i);
-  
-  if(selected.length + pool.length < 6) return null;
-
-  while(selected.length < 6){
-    let pick;
-    if(mode === 'random') pick = pool[Math.floor(Math.random()*pool.length)];
-    else {
-      const weightMap = {};
-      const maxFreq = Math.max(...Object.values(frequency));
-      pool.forEach(n => {
-        if(mode === 'hot') weightMap[n] = (frequency[n] || 0) + 1;
-        else if(mode === 'cold') weightMap[n] = (maxFreq - (frequency[n] || 0)) + 1;
-        else weightMap[n] = Math.random() > 0.5 ? (frequency[n] || 0) + 1 : (maxFreq - (frequency[n] || 0)) + 1;
-      });
-      pick = weightedPick(pool, weightMap);
-    }
-    selected.push(pick);
-    pool = pool.filter(v => v !== pick);
-  }
-  return uniqueSorted(selected);
-}
-
+// 추첨 로직
 function generateSets(){
   if(!lottoData.length) return;
   const mode = $('modeSelect').value;
-  const setCount = Number($('setCount').value);
-  const recentAvoidCount = Number($('recentAvoidCount').value);
+  const count = Number($('setCount').value);
+  const avoid = Number($('recentAvoidCount').value);
   const fixed = parseNumList($('fixedNumbers').value);
-  const exclude = parseNumList($('excludeNumbers').value);
+  const excl = new Set(parseNumList($('excludeNumbers').value));
+  
+  const avoidSet = new Set();
+  [...lottoData].sort((a,b)=>b.round-a.round).slice(0, avoid).forEach(r => r.numbers.forEach(n=>avoidSet.add(n)));
 
   const out = [];
-  for(let i=0; i<setCount*2 && out.length < setCount; i++){
-    const combo = buildCombination({mode, fixed, exclude, recentAvoidCount});
-    if(combo && !out.some(v => v.join(',') === combo.join(','))) out.push(combo);
+  while(out.length < count){
+    let pool = [];
+    for(let i=1;i<=45;i++) if(!excl.has(i) && !avoidSet.has(i)) pool.push(i);
+    
+    let res = [...new Set(fixed)].filter(n => !excl.has(n) && !avoidSet.has(n));
+    while(res.length < 6 && pool.length > 0){
+      let pick;
+      if(mode==='random') pick = pool[Math.floor(Math.random()*pool.length)];
+      else {
+        const max = Math.max(...Object.values(frequency));
+        const weights = pool.map(n => {
+          let w = mode==='hot' ? (frequency[n]||0)+1 : mode==='cold' ? (max-(frequency[n]||0))+1 : Math.random()>0.5 ? (frequency[n]||0)+1 : (max-(frequency[n]||0))+1;
+          return {n, w};
+        });
+        const totalW = weights.reduce((a,b)=>a+b.w,0);
+        let r = Math.random()*totalW;
+        pick = weights.find(v => { r-=v.w; return r<=0; }).n;
+      }
+      if(!res.includes(pick)) res.push(pick);
+      pool = pool.filter(v=>v!==pick);
+    }
+    if(res.length===6) out.push(res.sort((a,b)=>a-b));
+    if(out.length > 100) break; // 무한루프 방지
   }
   
-  const modeName = {random:'랜덤', hot:'핫넘버', cold:'콜드넘버', balanced:'혼합'}[mode];
-  $('drawResults').innerHTML = `<div style="margin-bottom:10px;"><span class="chip">${modeName}</span></div>` + 
-    out.map((set, idx) => `<div class="card"><strong>${idx+1}세트</strong><div class="ball-row" style="margin-top:8px;">${set.map(ball).join('')}</div></div>`).join('');
+  $('drawResults').innerHTML = out.map((s,i)=>`<div class="card"><strong>${i+1}세트</strong><div class="ball-row" style="margin-top:8px">${s.map(ball).join('')}</div></div>`).join('');
 }
 
-// QR 스캐너 로직
-let html5QrCode = null;
-let scanning = false;
-let lastQrText = '';
-
-async function stopScanner(){
-  if(html5QrCode && scanning){ await html5QrCode.stop(); scanning = false; }
-  $('placeholder').hidden = false;
-  setQrStatus('<span class="muted">카메라가 꺼졌습니다.</span>');
-}
-
+// QR 로직
+let qrCode = null;
 async function startScanner(){
-  if(scanning) return;
-  try{
-    $('placeholder').hidden = true;
-    if(!html5QrCode) html5QrCode = new Html5Qrcode('reader');
-    const cameras = await Html5Qrcode.getCameras();
-    const camera = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[0];
-    await html5QrCode.start(camera.id, { fps:10, qrbox:250 }, text => {
-      lastQrText = text;
-      $('qrResult').textContent = text;
-      setQrStatus('<span class="ok">인식 성공!</span>');
+  $('placeholder').hidden = true;
+  if(!qrCode) qrCode = new Html5Qrcode("reader");
+  try {
+    const cams = await Html5Qrcode.getCameras();
+    const camId = cams.find(c=>/back|rear|environment/i.test(c.label))?.id || cams[0].id;
+    await qrCode.start(camId, {fps:10, qrbox:250}, txt => {
+      $('qrResult').textContent = txt;
+      setQrStatus('<span class="ok">인식됨!</span>');
     });
-    scanning = true;
     setQrStatus('<span class="ok">스캔 중...</span>');
-  }catch(e){
-    $('placeholder').hidden = false;
-    setQrStatus('<span class="danger">카메라를 켤 수 없습니다.</span>');
-  }
+  } catch(e) { setQrStatus('<span class="danger">카메라 에러</span>'); }
 }
 
-// 이벤트 리스너
 $('refreshBtn').addEventListener('click', loadDefaultJson);
 $('loadDefaultBtn').addEventListener('click', loadDefaultJson);
 $('drawBtn').addEventListener('click', generateSets);
 $('showRoundBtn').addEventListener('click', () => showRoundDetail($('roundSelect').value));
 $('startBtn').addEventListener('click', startScanner);
-$('stopBtn').addEventListener('click', stopScanner);
-$('copyQrBtn').addEventListener('click', () => { if(lastQrText) navigator.clipboard.writeText(lastQrText); });
-$('openQrBtn').addEventListener('click', () => { if(/^http/i.test(lastQrText)) window.open(lastQrText); });
+$('stopBtn').addEventListener('click', async () => { if(qrCode){ await qrCode.stop(); $('placeholder').hidden=false; setQrStatus('꺼짐'); } });
+$('copyQrBtn').addEventListener('click', () => { navigator.clipboard.writeText($('qrResult').textContent); });
+$('openQrBtn').addEventListener('click', () => { const t = $('qrResult').textContent; if(/^http/i.test(t)) window.open(t); });
 
-// 초기 실행
-if('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 loadDefaultJson();
 </script>
 </body>
