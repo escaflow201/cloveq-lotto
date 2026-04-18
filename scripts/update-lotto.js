@@ -1,63 +1,70 @@
-import fs from "fs";
+const fs = require("fs");
 
-const filePath = "lotto_recent_year.json";
+const FILE = "lotto_recent_year.json";
 
-let data = [];
-try {
-  const raw = fs.readFileSync(filePath, "utf8").trim();
-  data = raw ? JSON.parse(raw) : [];
-} catch {
-  data = [];
-}
+async function fetchAllRounds() {
+  const url = "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all";
 
-const lastRound = data.length > 0 ? data[data.length - 1].round : 0;
-const nextRound = lastRound + 1;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json, text/plain, */*",
+      "X-Requested-With": "XMLHttpRequest",
+      "Referer": "https://www.dhlottery.co.kr/lt645/result"
+    }
+  });
 
-console.log("마지막 저장 회차:", lastRound);
-console.log("조회할 다음 회차:", nextRound);
+  const text = await res.text();
 
-const url = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${nextRound}`;
-
-const res = await fetch(url, {
-  headers: {
-    "User-Agent": "Mozilla/5.0"
+  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+    throw new Error("JSON 대신 HTML이 왔어.");
   }
+
+  const json = JSON.parse(text);
+
+  // 응답 구조에 따라 data 또는 data.list 둘 다 대응
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.data?.list)
+    ? json.data.list
+    : [];
+
+  if (!rows.length) {
+    throw new Error("회차 데이터가 비어 있어.");
+  }
+
+  return rows;
+}
+
+function toAppRow(row) {
+  return {
+    round: Number(row.ltEpsd ?? row.drwNo ?? row.round),
+    draw_date: String(row.ltRflYmd ?? row.drwNoDate ?? row.draw_date ?? ""),
+    numbers: [
+      Number(row.tm1WnNo ?? row.drwtNo1),
+      Number(row.tm2WnNo ?? row.drwtNo2),
+      Number(row.tm3WnNo ?? row.drwtNo3),
+      Number(row.tm4WnNo ?? row.drwtNo4),
+      Number(row.tm5WnNo ?? row.drwtNo5),
+      Number(row.tm6WnNo ?? row.drwtNo6)
+    ].filter(Number.isFinite),
+    bonus: Number(row.bnusNo ?? row.bonus)
+  };
+}
+
+async function main() {
+  const rows = await fetchAllRounds();
+
+  const list = rows
+    .map(toAppRow)
+    .filter(v => v.round && v.numbers.length === 6 && Number.isFinite(v.bonus))
+    .sort((a, b) => a.round - b.round);
+
+  fs.writeFileSync(FILE, JSON.stringify(list, null, 2), "utf8");
+  console.log(`업데이트 완료: ${list.length}개`);
+}
+
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
 });
-
-const text = await res.text();
-console.log("응답 앞부분:", text.slice(0, 80));
-
-let json;
-try {
-  json = JSON.parse(text);
-} catch {
-  throw new Error("JSON 응답이 아니라서 파싱 실패");
-}
-
-if (json.returnValue !== "success") {
-  console.log("아직 새 회차가 없거나 조회 실패");
-  process.exit(0);
-}
-
-const exists = data.some(item => item.round === json.drwNo);
-if (exists) {
-  console.log("이미 저장된 회차라서 종료");
-  process.exit(0);
-}
-
-data.push({
-  round: json.drwNo,
-  date: json.drwNoDate,
-  numbers: [
-    json.drwtNo1,
-    json.drwtNo2,
-    json.drwtNo3,
-    json.drwtNo4,
-    json.drwtNo5,
-    json.drwtNo6
-  ],
-  bonus: json.bnusNo
-});
-
-fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
-console.log("JSON 업데이트 완료:", json.drwNo);
