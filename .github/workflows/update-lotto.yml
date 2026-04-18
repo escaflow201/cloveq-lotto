@@ -1,43 +1,33 @@
-name: Update Lotto JSON
+name: Update Lotto Data
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "0 13 * * 6"
+    - cron: '0 3 * * 6'  # 토요일 낮 12시 (한국)
+  workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
       - name: 코드 가져오기
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Node 설치
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 18
 
-      - name: 스크립트 실행
+      - name: 패키지 설치
+        run: npm install node-fetch@2
+
+      - name: 데이터 업데이트
         run: node scripts/update-lotto.js
 
-      - name: 변경사항 확인
-        id: changes
+      - name: 커밋 & 푸시
         run: |
-          if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 변경사항 커밋
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
           git add lotto_recent_year.json
-          git commit -m "자동 업데이트"
+          git commit -m "자동 업데이트" || echo "변경 없음"
           git push
