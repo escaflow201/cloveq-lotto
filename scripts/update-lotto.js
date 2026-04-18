@@ -26,7 +26,7 @@ async function fetchAllRounds() {
     throw new Error("응답 구조가 예상과 달라");
   }
 
-  return json.data.list;
+  return json.data;
 }
 
 function convertRow(row) {
