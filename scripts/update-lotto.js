@@ -1,34 +1,49 @@
 import fs from "fs";
 
-const results = [];
+const filePath = "lotto_recent_year.json";
 
-for (let round = 1100; round <= 1200; round++) {
-  try {
-    const res = await fetch(`https://api.allorigins.win/raw?url=https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`);
-    const data = await res.json();
+let data = [];
+try {
+  data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+} catch {}
 
-    if (data.returnValue !== "success") continue;
+const lastRound = data.length > 0 ? data[data.length - 1].round : 1100;
+const nextRound = lastRound + 1;
 
-    results.push({
-      round: data.drwNo,
-      numbers: [
-        data.drwtNo1,
-        data.drwtNo2,
-        data.drwtNo3,
-        data.drwtNo4,
-        data.drwtNo5,
-        data.drwtNo6
-      ],
-      bonus: data.bnusNo
-    });
+console.log("다음 회차:", nextRound);
 
-  } catch (e) {
-    console.log("에러:", round);
+const url = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${nextRound}`;
+
+try {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0" }
+  });
+
+  const text = await res.text();
+
+  if (!text.includes("drwtNo1")) {
+    throw new Error("아직 추첨 안됨");
   }
-}
 
-if (results.length === 0) {
-  throw new Error("데이터 못 가져옴");
-}
+  const json = JSON.parse(text);
 
-fs.writeFileSync("lotto_recent_year.json", JSON.stringify(results, null, 2));
+  data.push({
+    round: json.drwNo,
+    date: json.drwNoDate,
+    numbers: [
+      json.drwtNo1,
+      json.drwtNo2,
+      json.drwtNo3,
+      json.drwtNo4,
+      json.drwtNo5,
+      json.drwtNo6
+    ],
+    bonus: json.bnusNo
+  });
+
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  console.log("추가 완료");
+
+} catch (e) {
+  console.log("추첨 아직 안됨 or 실패");
+}
