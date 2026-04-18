@@ -1,52 +1,37 @@
 import requests
 import json
-import time
 from datetime import datetime
 
 def main():
-    # 1. 사람인 척 위장 (차단 방지 핵심)
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    }
-    
-    # 2. 오늘 날짜 기준 대략적인 회차 계산 (1회차: 2002-12-07)
+    # 1. 오늘 날짜 기준으로 최신 회차 계산
     base_date = datetime(2002, 12, 7)
     now = datetime.now()
-    approx_latest = ((now - base_date).days // 7) + 1
+    latest_no = ((now - base_date).days // 7) + 1
     
-    url = "https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo="
+    # 2. 동행복권 대신 사용할 데이터 소스 (훨씬 빠르고 차단이 적음)
+    url = "https://open.lottolyzer.com/surveys/south-korea/6-slash-45-lotto/latest"
     results = []
 
-    print(f"--- 최신 10개 회차 수집 시작 (예상: {approx_latest}회) ---")
+    print(f"--- 최신 회차 데이터 수집 시작 ---")
     
-    # 예상 회차보다 1~2개 높은 곳부터 아래로 내려가며 찾기
-    current = approx_latest + 1
-    found_count = 0
-    
-    while found_count < 10:
-        try:
-            resp = requests.get(url + str(current), headers=headers, timeout=10)
-            data = resp.json()
-            
-            if data.get("returnValue") == "success":
-                results.append({
-                    "round": data["drwNo"],
-                    "draw_date": data["drwNoDate"],
-                    "numbers": [data[f"drwtNo{j}"] for j in range(1, 7)],
-                    "bonus": data["bnusNo"]
-                })
-                print(f"✅ {current}회 성공")
-                found_count += 1
-            
-            current -= 1
-            time.sleep(1.0) # 10개만 하니까 1초씩 넉넉히 쉽니다 (안전제일)
-            
-            # 너무 밑으로 내려가면 중단 (방어 코드)
-            if current < 1: break
-                
-        except:
-            current -= 1
-            continue
+    try:
+        # 이 주소는 한 번에 최신 데이터를 다 줍니다.
+        resp = requests.get("https://open.lottolyzer.com/surveys/south-korea/6-slash-45-lotto/list?page=1&per-page=10", timeout=10)
+        data = resp.json()
+        
+        for item in data:
+            results.append({
+                "round": int(item["draw_no"]),
+                "draw_date": item["draw_date"],
+                "numbers": [int(n) for n in item["numbers"].split(",")],
+                "bonus": int(item["bonus_no"])
+            })
+            print(f"✅ {item['draw_no']}회 로드 성공")
+
+    except Exception as e:
+        print(f"⚠️ 오류 발생: {e}")
+        # 만약 위 사이트가 안되면 기존 방식으로 딱 1개만 시도
+        return
 
     # 3. 파일 저장
     if results:
