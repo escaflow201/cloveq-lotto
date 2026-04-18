@@ -1,67 +1,36 @@
-const fs = require("fs");
+import fetch from "node-fetch";
+import fs from "fs";
 
-const FILE = "lotto_recent_year.json";
+const results = [];
 
-async function fetchAllRounds() {
-  const url = "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all";
+for (let round = 1100; round <= 1200; round++) {
+  try {
+    const res = await fetch(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "application/json, text/plain, */*",
-      "X-Requested-With": "XMLHttpRequest",
-      "Referer": "https://www.dhlottery.co.kr/lt645/result"
-    }
-  });
+    const data = await res.json();
 
-  const text = await res.text();
+    if (data.returnValue !== "success") continue;
 
-  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-    throw new Error(`JSON 대신 HTML 응답이 왔어: ${text.slice(0, 200)}`);
+    results.push({
+      round,
+      numbers: [
+        data.drwtNo1,
+        data.drwtNo2,
+        data.drwtNo3,
+        data.drwtNo4,
+        data.drwtNo5,
+        data.drwtNo6
+      ],
+      bonus: data.bnusNo
+    });
+
+  } catch (e) {
+    console.log("에러:", round);
   }
-
-  const json = JSON.parse(text);
-
-if (!json || !Array.isArray(json.data)) {
-  throw new Error("응답 구조 이상");
 }
 
-  return json.data;
-}
-
-function convertRow(row) {
-  return {
-    drwNo: Number(row.ltEpsd),
-    drwNoDate: row.ltRflYmd,
-    numbers: [
-      Number(row.tm1WnNo),
-      Number(row.tm2WnNo),
-      Number(row.tm3WnNo),
-      Number(row.tm4WnNo),
-      Number(row.tm5WnNo),
-      Number(row.tm6WnNo)
-    ],
-    bonus: Number(row.bnusNo)
-  };
-}
-
-async function main() {
-  const rows = await fetchAllRounds();
-
-  const list = rows
-    .map(convertRow)
-    .filter(v =>
-      Number.isFinite(v.drwNo) &&
-      v.numbers.every(Number.isFinite) &&
-      Number.isFinite(v.bonus)
-    )
-    .sort((a, b) => a.drwNo - b.drwNo);
-
-  fs.writeFileSync(FILE, JSON.stringify(list, null, 2), "utf8");
-  console.log(`업데이트 완료: ${list.length}개 회차 저장`);
-}
-
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+fs.writeFileSync("lotto_recent_year.json", JSON.stringify(results, null, 2));
