@@ -1,10 +1,27 @@
 const fs = require("fs");
+
 const FILE = "lotto_recent_year.json";
 
 async function fetchRound(round) {
   const url = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
-  const res = await fetch(url);
-  const data = await res.json();
+
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/json, text/plain, */*",
+      "Referer": "https://www.dhlottery.co.kr/gameResult.do?method=byWin",
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  });
+
+  const text = await res.text();
+
+  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+    throw new Error(`JSON 대신 HTML 응답이 왔어: ${text.slice(0, 120)}`);
+  }
+
+  const data = JSON.parse(text);
+
   if (data.returnValue !== "success") return null;
 
   return {
@@ -29,7 +46,6 @@ async function main() {
   }
 
   const lastRound = list.length ? Math.max(...list.map(v => v.drwNo)) : 1;
-
   let nextRound = lastRound + 1;
 
   while (true) {
@@ -45,4 +61,7 @@ async function main() {
   console.log("업데이트 완료");
 }
 
-main();
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
