@@ -22,9 +22,9 @@ async function fetchAllRounds() {
 
   const json = JSON.parse(text);
 
-  if (!json || !json.data || !Array.isArray(json.data.list)) {
-    throw new Error("응답 구조가 예상과 달라");
-  }
+if (!json || !Array.isArray(json.data)) {
+  throw new Error("응답 구조 이상");
+}
 
   return json.data;
 }
