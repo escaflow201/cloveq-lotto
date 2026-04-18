@@ -19,7 +19,7 @@ jobs:
       - name: Node 설치
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: 실행
         run: node scripts/update-lotto.js
