@@ -8,39 +8,39 @@ async function fetchRound(round) {
 
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "application/json, text/plain, */*"
-    },
-    cache: "no-store"
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "ko-KR,ko;q=0.9",
+      "Referer": "https://www.dhlottery.co.kr/lottoResult.do?method=byWin",
+      "Connection": "keep-alive"
+    }
   });
 
   const text = await res.text();
 
-  if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-    throw new Error(`회차 ${round}: JSON 대신 HTML 응답이 왔어.`);
+  // 🔥 HTML 오면 그냥 null 처리 (중요)
+  if (text.includes("<html")) {
+    return null;
   }
 
   const data = JSON.parse(text);
 
-  if (data.returnValue !== "success") {
-    return null;
-  }
+  if (data.returnValue !== "success") return null;
 
   return {
     round: Number(data.drwNo),
     draw_date: String(data.drwNoDate || ""),
     numbers: [
-      Number(data.drwtNo1),
-      Number(data.drwtNo2),
-      Number(data.drwtNo3),
-      Number(data.drwtNo4),
-      Number(data.drwtNo5),
-      Number(data.drwtNo6)
+      data.drwtNo1,
+      data.drwtNo2,
+      data.drwtNo3,
+      data.drwtNo4,
+      data.drwtNo5,
+      data.drwtNo6
     ],
-    bonus: Number(data.bnusNo)
+    bonus: data.bnusNo
   };
 }
-
 function isValidRow(row) {
   return (
     row &&
