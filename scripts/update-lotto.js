@@ -2,63 +2,63 @@ const fs = require("fs");
 
 const FILE = "lotto_recent_year.json";
 
-async function fetchRound(round) {
-  const url = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
+async function fetchAllRounds() {
+  const url = "https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=all";
 
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
       "Accept": "application/json, text/plain, */*",
-      "Referer": "https://www.dhlottery.co.kr/gameResult.do?method=byWin",
-      "X-Requested-With": "XMLHttpRequest"
+      "X-Requested-With": "XMLHttpRequest",
+      "Referer": "https://www.dhlottery.co.kr/lt645/result"
     }
   });
 
   const text = await res.text();
 
   if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
-    throw new Error(`JSON 대신 HTML 응답이 왔어: ${text.slice(0, 120)}`);
+    throw new Error(`JSON 대신 HTML 응답이 왔어: ${text.slice(0, 200)}`);
   }
 
-  const data = JSON.parse(text);
+  const json = JSON.parse(text);
 
-  if (data.returnValue !== "success") return null;
+  if (!json || !json.data || !Array.isArray(json.data.list)) {
+    throw new Error("응답 구조가 예상과 달라");
+  }
 
+  return json.data.list;
+}
+
+function convertRow(row) {
   return {
-    drwNo: data.drwNo,
-    drwNoDate: data.drwNoDate,
+    drwNo: Number(row.ltEpsd),
+    drwNoDate: row.ltRflYmd,
     numbers: [
-      data.drwtNo1,
-      data.drwtNo2,
-      data.drwtNo3,
-      data.drwtNo4,
-      data.drwtNo5,
-      data.drwtNo6
+      Number(row.tm1WnNo),
+      Number(row.tm2WnNo),
+      Number(row.tm3WnNo),
+      Number(row.tm4WnNo),
+      Number(row.tm5WnNo),
+      Number(row.tm6WnNo)
     ],
-    bonus: data.bnusNo
+    bonus: Number(row.bnusNo)
   };
 }
 
 async function main() {
-  let list = [];
-  if (fs.existsSync(FILE)) {
-    list = JSON.parse(fs.readFileSync(FILE, "utf8"));
-  }
+  const rows = await fetchAllRounds();
 
-  const lastRound = list.length ? Math.max(...list.map(v => v.drwNo)) : 1;
-  let nextRound = lastRound + 1;
+  const list = rows
+    .map(convertRow)
+    .filter(v =>
+      Number.isFinite(v.drwNo) &&
+      v.numbers.every(Number.isFinite) &&
+      Number.isFinite(v.bonus)
+    )
+    .sort((a, b) => a.drwNo - b.drwNo);
 
-  while (true) {
-    const row = await fetchRound(nextRound);
-    if (!row) break;
-    list.push(row);
-    nextRound++;
-  }
-
-  list.sort((a, b) => a.drwNo - b.drwNo);
   fs.writeFileSync(FILE, JSON.stringify(list, null, 2), "utf8");
-
-  console.log("업데이트 완료");
+  console.log(`업데이트 완료: ${list.length}개 회차 저장`);
 }
 
 main().catch(err => {
