@@ -1,7 +1,4 @@
 const fs = require("fs");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
-
 const FILE = "lotto_recent_year.json";
 
 async function fetchRound(round) {
