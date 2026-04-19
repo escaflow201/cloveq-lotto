@@ -1,83 +1,47 @@
-import json
-import re
-import time
-from pathlib import Path
-
 import requests
+import json
 
-INTRO_URL = "https://www.dhlottery.co.kr/lotto645/intro.do?method=main"
-API_URL = "https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={}"
-OUT_FILE = Path("lotto_recent_year.json")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0",
-    "Referer": "https://www.dhlottery.co.kr/",
-}
-
-def get_latest_result_round():
-    res = requests.get(INTRO_URL, headers=HEADERS, timeout=15)
-    res.raise_for_status()
-    html = res.text
-
-    rounds = re.findall(r"제\s*(\d+)\s*회", html)
-    nums = sorted({int(x) for x in rounds}, reverse=True)
-
-    if not nums:
-        raise RuntimeError("회차를 찾지 못했어.")
-
-    # 가장 큰 숫자는 예정 회차일 가능성이 크니까
-    # 실제 당첨번호 API가 성공하는 가장 큰 회차를 찾음
-    for n in nums:
-        row = fetch_round(n)
-        if row:
-            return n
-        time.sleep(0.05)
-
-    raise RuntimeError("최신 결과 회차를 찾지 못했어.")
-
-def fetch_round(round_no):
-    try:
-        res = requests.get(API_URL.format(round_no), headers=HEADERS, timeout=15)
-        res.raise_for_status()
+# 최근 회차 찾기
+def get_latest_round():
+    for i in range(1300, 1000, -1):
+        url = f"https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={i}"
+        res = requests.get(url)
         data = res.json()
 
-        if data.get("returnValue") != "success":
-            return None
+        if data.get("returnValue") == "success":
+            return i
+    return None
 
-        return {
-            "round": data["drwNo"],
-            "draw_date": data["drwNoDate"],
-            "numbers": [
-                data["drwtNo1"],
-                data["drwtNo2"],
-                data["drwtNo3"],
-                data["drwtNo4"],
-                data["drwtNo5"],
-                data["drwtNo6"],
-            ],
-            "bonus": data["bnusNo"],
-        }
-    except Exception:
-        return None
+# 최근 10회 가져오기
+def get_latest_10():
+    latest = get_latest_round()
+    result = []
 
-def main():
-    latest_round = get_latest_result_round()
-    results = []
+    for i in range(latest, latest-10, -1):
+        url = f"https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={i}"
+        res = requests.get(url)
+        data = res.json()
 
-    # 최근 10회차만 저장
-    for round_no in range(latest_round, latest_round - 10, -1):
-        row = fetch_round(round_no)
-        if row:
-            results.append(row)
-        time.sleep(0.03)
+        if data.get("returnValue") == "success":
+            result.append({
+                "round": i,
+                "numbers": [
+                    data["drwtNo1"],
+                    data["drwtNo2"],
+                    data["drwtNo3"],
+                    data["drwtNo4"],
+                    data["drwtNo5"],
+                    data["drwtNo6"]
+                ],
+                "bonus": data["bnusNo"]
+            })
 
-    if not results:
-        raise RuntimeError("최근 10회차를 가져오지 못했어.")
+    return result
 
-    with OUT_FILE.open("w", encoding="utf-8") as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
+# 저장
+data = get_latest_10()
 
-    print(f"완료: {results[0]['round']}회 ~ {results[-1]['round']}회 저장됨")
+with open("lotto_recent.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
 
-if __name__ == "__main__":
-    main()
+print("완료")
