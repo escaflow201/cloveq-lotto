@@ -1,11 +1,10 @@
 import json
 import time
 from pathlib import Path
+from datetime import date
 
 import requests
-from bs4 import BeautifulSoup
 
-MAIN_URL = "https://www.dhlottery.co.kr/common.do?method=main"
 API_URL = "https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={}"
 OUT_FILE = Path("lotto_recent_year.json")
 
@@ -14,19 +13,18 @@ HEADERS = {
     "Referer": "https://www.dhlottery.co.kr/",
 }
 
-def get_latest_round():
-    res = requests.get(MAIN_URL, headers=HEADERS, timeout=10)
-    res.raise_for_status()
-    soup = BeautifulSoup(res.text, "html.parser")
+FIRST_DRAW_DATE = date(2002, 12, 7)  # 1회 추첨일
 
-    el = soup.find("strong", id="lottoDrwNo")
-    if not el:
-        raise RuntimeError("최신 회차 못찾음")
 
-    return int(el.text.strip())
+def estimate_round() -> int:
+    today = date.today()
+    weeks = (today - FIRST_DRAW_DATE).days // 7
+    return weeks + 1
+
 
 def fetch_round(round_no: int):
-    res = requests.get(API_URL.format(round_no), headers=HEADERS, timeout=10)
+    url = API_URL.format(round_no)
+    res = requests.get(url, headers=HEADERS, timeout=15)
     res.raise_for_status()
     data = res.json()
 
@@ -47,20 +45,45 @@ def fetch_round(round_no: int):
         "bonus": data["bnusNo"],
     }
 
+
+def find_latest_round() -> int:
+    guessed = estimate_round() + 2  # 여유 2회
+
+    # 예상 최신 회차부터 아래로 15회만 확인
+    for round_no in range(guessed, max(guessed - 15, 0), -1):
+        try:
+            row = fetch_round(round_no)
+            if row:
+                return round_no
+        except Exception:
+            pass
+        time.sleep(0.05)
+
+    raise RuntimeError("최신 회차를 찾지 못했어.")
+
+
 def main():
-    latest = get_latest_round()
+    latest_round = find_latest_round()
     results = []
 
-    for n in range(latest, max(latest - 52, 0), -1):
-        row = fetch_round(n)
-        if row:
-            results.append(row)
-        time.sleep(0.05)
+    # 최근 52회 저장
+    for round_no in range(latest_round, max(latest_round - 52, 0), -1):
+        try:
+            row = fetch_round(round_no)
+            if row:
+                results.append(row)
+        except Exception as e:
+            print(f"{round_no}회차 실패: {e}")
+        time.sleep(0.03)
+
+    if not results:
+        raise RuntimeError("저장할 데이터가 없어.")
 
     with OUT_FILE.open("w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
-    print(f"완료: {latest}회차까지 저장됨")
+    print(f"완료: 최신 {latest_round}회차까지 저장됨")
+
 
 if __name__ == "__main__":
     main()
